@@ -21,7 +21,8 @@ module.exports.getMessages = async (req, res, next) => {
         message_deleted: msg.message.is_deleted || false, 
         fromSelf: msg.sender.toString() === from,
         message: CryptoJS.AES.decrypt(msg.message.text, senderKey+receiverKey).toString(CryptoJS.enc.Utf8),
-      };
+        created_at: msg.createdAt
+      }
     });
     res.json(projectedMessages);
   } catch (ex) {

@@ -22,6 +22,9 @@ export default function ChatContainer({ currentChat, socket }) {
       from: data._id,
       to: currentChat._id,
     });
+    response.data.sort((a,b)=>{
+      return new Date(a.created_at)-new Date(b.created_at)
+    })
     setMessages(response.data);
   }, [currentChat]);
 
@@ -41,44 +44,52 @@ export default function ChatContainer({ currentChat, socket }) {
       localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)
     );
     if (msgId) {
-      socket.current.emit("send-msg", {
-        to: currentChat._id,
-        from: data._id,
-        msg,
-        message_id: msgId
-      });
       await axios.put(putMessageRoute, {
         from: data._id,
         to: currentChat._id,
         message: msg,
         message_id: msgId
       });
+      socket.current.emit("send-msg", {
+        to: currentChat._id,
+        from: data._id,
+        msg,
+        message_id: msgId
+      });
+      // refresh is for sending user
       const response = await axios.post(recieveMessageRoute, {
         from: data._id,
         to: currentChat._id,
       });
+      response.data.sort((a,b)=>{
+        return new Date(a.created_at)-new Date(b.created_at)
+      })
       setMessages(response.data);
       return;
     }
 
-    socket.current.emit("send-msg", {
-      to: currentChat._id,
-      from: data._id,
-      msg,
-    });
     await axios.post(sendMessageRoute, {
       from: data._id,
       to: currentChat._id,
       message: msg,
     });
-
-    // const msgs = [...messages];
-    // msgs.push({ fromSelf: true, message: msg });
-    // setMessages(msgs);
+    socket.current.emit("send-msg", {
+      to: currentChat._id,
+      from: data._id,
+      msg,
+    });
+   
+     // refresh is for sending user
+    const msgs = [...messages];
+    msgs.push({ fromSelf: true, message: msg });
+    setMessages(msgs);
     const response = await axios.post(recieveMessageRoute, {
       from: data._id,
       to: currentChat._id,
     });
+    response.data.sort((a,b)=>{
+      return new Date(a.created_at)-new Date(b.created_at)
+    })
     setMessages(response.data);
   };
 
@@ -105,10 +116,14 @@ export default function ChatContainer({ currentChat, socket }) {
       from: data._id,
       msg: message.message,
     });
+     // refresh is for sending user
     const response = await axios.post(recieveMessageRoute, {
       from: data._id,
       to: currentChat._id,
     });
+    response.data.sort((a,b)=>{
+      return new Date(a.created_at)-new Date(b.created_at)
+    })
     setMessages(response.data);
     return;
   };
@@ -130,6 +145,9 @@ export default function ChatContainer({ currentChat, socket }) {
         from: data._id,
         to: currentChat._id,
       });
+      response.data.sort((a,b)=>{
+        return new Date(a.created_at)-new Date(b.created_at)
+      })
       setMessages(response.data);
     }
     // arrivalMessage && setMessages((prev) => [...prev, arrivalMessage]);
