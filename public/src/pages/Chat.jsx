@@ -7,7 +7,7 @@ import { allUsersRoute, host } from "../utils/APIRoutes";
 import ChatContainer from "../components/ChatContainer";
 import Contacts from "../components/Contacts";
 import Welcome from "../components/Welcome";
-
+import {  MessageProvider } from "../components/MessageContext";
 export default function Chat() {
   const navigate = useNavigate();
   const socket = useRef();
@@ -53,7 +53,9 @@ export default function Chat() {
           {currentChat === undefined ? (
             <Welcome />
           ) : (
-            <ChatContainer currentChat={currentChat} socket={socket} />
+            <MessageProvider>
+              <ChatContainer currentChat={currentChat} socket={socket} />
+            </MessageProvider>
           )}
         </div>
       </Container>

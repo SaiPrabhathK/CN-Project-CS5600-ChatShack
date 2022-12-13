@@ -1,11 +1,16 @@
-import React, { useState } from "react";
-import { BsEmojiSmileFill } from "react-icons/bs";
+import React, { useEffect, useState } from "react";
+import { BsEmojiSmileFill, BsJustify } from "react-icons/bs";
 import { IoMdSend } from "react-icons/io";
 import styled from "styled-components";
 import Picker from "emoji-picker-react";
+import { useMessageContext } from "./MessageContext";
 
 export default function ChatInput({ handleSendMsg }) {
+  const messageContext = useMessageContext();
+  const outputMsgObject = messageContext.selectedMsg;
+  const setMsgObject = messageContext.setMsgDetails;
   const [msg, setMsg] = useState("");
+  const [mode, setMode] = useState("new_msg");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const handleEmojiPickerhideShow = () => {
     setShowEmojiPicker(!showEmojiPicker);
@@ -20,10 +25,22 @@ export default function ChatInput({ handleSendMsg }) {
   const sendChat = (event) => {
     event.preventDefault();
     if (msg.length > 0) {
-      handleSendMsg(msg);
+      if(mode == "new_msg"){
+        handleSendMsg(msg);
+      }else if(mode == 'edit_msg'){
+        handleSendMsg(msg,outputMsgObject.message_id);
+      }
       setMsg("");
+      setMsgObject({message_id:"",message:""})
     }
   };
+
+  useEffect(()=>{
+    console.log("message");
+    console.log(messageContext.selectedMsg)
+    setMsg(outputMsgObject.message);
+    setMode("edit_msg")
+  },[messageContext.selectedMsg])
 
   return (
     <Container>

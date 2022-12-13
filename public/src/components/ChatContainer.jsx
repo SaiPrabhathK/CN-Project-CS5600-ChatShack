@@ -4,12 +4,15 @@ import ChatInput from "./ChatInput";
 import Logout from "./Logout";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
-import { sendMessageRoute, recieveMessageRoute } from "../utils/APIRoutes";
+import { sendMessageRoute, recieveMessageRoute, putMessageRoute,deleteMessageRoute } from "../utils/APIRoutes";
+import { useMessageContext } from "./MessageContext";
+
 
 export default function ChatContainer({ currentChat, socket }) {
   const [messages, setMessages] = useState([]);
   const scrollRef = useRef();
   const [arrivalMessage, setArrivalMessage] = useState(null);
+  const messageContext = useMessageContext();
 
   useEffect(async () => {
     const data = await JSON.parse(
@@ -33,10 +36,25 @@ export default function ChatContainer({ currentChat, socket }) {
     getCurrentChat();
   }, [currentChat]);
 
-  const handleSendMsg = async (msg) => {
+  const handleSendMsg = async (msg, msgId) => {
     const data = await JSON.parse(
       localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)
     );
+    if (msgId) {
+      socket.current.emit("send-msg", {
+        to: currentChat._id,
+        from: data._id,
+        msg,
+      });
+      await axios.put(putMessageRoute, {
+        from: data._id,
+        to: currentChat._id,
+        message: msg,
+        message_id: msgId
+      });
+      return;
+    }
+
     socket.current.emit("send-msg", {
       to: currentChat._id,
       from: data._id,
@@ -51,6 +69,27 @@ export default function ChatContainer({ currentChat, socket }) {
     const msgs = [...messages];
     msgs.push({ fromSelf: true, message: msg });
     setMessages(msgs);
+  };
+
+  const handleClick = async (message, mode) => {
+    // messageContext.selectedMsg.message = message.message;
+    // messageContext.selectedMsg.message_id = message.message_id;
+    const data = await JSON.parse(
+      localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)
+    );
+    if (mode == 'edit_msg') {
+      messageContext.setMsgDetails(message)
+      return;
+    }
+    // console.log(messageContext.selectedMsg)
+    // console.log(message,mode);
+    await axios.put(deleteMessageRoute, {
+      from: data._id,
+      to: currentChat._id,
+      message: message.message,
+      message_id: message.message_id
+    });
+    return;
   };
 
   useEffect(() => {
@@ -85,24 +124,46 @@ export default function ChatContainer({ currentChat, socket }) {
         </div>
         <Logout />
       </div>
+      {/* <MessageProvider> */}
       <div className="chat-messages">
         {messages.map((message) => {
           return (
             <div ref={scrollRef} key={uuidv4()}>
               <div
-                className={`message ${
-                  message.fromSelf ? "sended" : "recieved"
-                }`}
+                className={`message ${message.fromSelf ? "sended" : "recieved"
+                  }`}
               >
-                <div className="content "> {/*Add a function that gives options to delete and edit messages*/}
-                  <p>{message.message}</p>
-                </div>
+                {message.message_deleted ?
+                  (<div className="content ">
+                  <p>Deleted</p>
+                  </div>)
+                  : (<div className="content "> {/*Add a function that gives options to delete and edit messages*/}
+                    <p>{message.message}</p>
+                    {
+                      message.fromSelf && (
+                        <ButtonContainer>
+                          <span>
+                            <Button onClick={() => handleClick(message, "edit")} >
+                              Edit
+                            </Button>
+                          </span>
+                          <span>
+                            <Button onClick={() => handleClick(message, "delete")}>
+                              Delete
+                            </Button>
+                          </span>
+                        </ButtonContainer>
+                      )
+                    }
+                  </div>)
+                }
               </div>
             </div>
           );
         })}
       </div>
       <ChatInput handleSendMsg={handleSendMsg} />
+
     </Container>
   );
 }
@@ -179,3 +240,27 @@ const Container = styled.div`
     }
   }
 `;
+
+const Button = styled.button`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background-color: #9a86f3;
+  border: none;
+  cursor: pointer;
+  svg {
+    font-size: 1.3rem;
+    color: #ebe7ff;
+  }
+  & + & {
+    padding:0.4rem
+  }
+`;
+
+const ButtonContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`
