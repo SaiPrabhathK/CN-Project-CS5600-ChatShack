@@ -37,7 +37,7 @@ module.exports.addMessage = async (req, res, next) => {
 
     var encryptedMessage = CryptoJS.AES.encrypt(message, senderKey+receiverKey).toString();
     const data = await Messages.create({
-      message: { text: encryptedMessage, message_created_at: datetime.toISOString() },
+      message: { text: encryptedMessage, message_created_at: (new Date()).toISOString() },
       users: [from, to],
       sender: from,
     });

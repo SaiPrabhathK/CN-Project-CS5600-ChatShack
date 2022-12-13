@@ -45,6 +45,7 @@ export default function ChatContainer({ currentChat, socket }) {
         to: currentChat._id,
         from: data._id,
         msg,
+        message_id: msgId
       });
       await axios.put(putMessageRoute, {
         from: data._id,
@@ -52,6 +53,11 @@ export default function ChatContainer({ currentChat, socket }) {
         message: msg,
         message_id: msgId
       });
+      const response = await axios.post(recieveMessageRoute, {
+        from: data._id,
+        to: currentChat._id,
+      });
+      setMessages(response.data);
       return;
     }
 
@@ -66,9 +72,14 @@ export default function ChatContainer({ currentChat, socket }) {
       message: msg,
     });
 
-    const msgs = [...messages];
-    msgs.push({ fromSelf: true, message: msg });
-    setMessages(msgs);
+    // const msgs = [...messages];
+    // msgs.push({ fromSelf: true, message: msg });
+    // setMessages(msgs);
+    const response = await axios.post(recieveMessageRoute, {
+      from: data._id,
+      to: currentChat._id,
+    });
+    setMessages(response.data);
   };
 
   const handleClick = async (message, mode) => {
@@ -89,6 +100,16 @@ export default function ChatContainer({ currentChat, socket }) {
       message: message.message,
       message_id: message.message_id
     });
+    socket.current.emit("send-msg", {
+      to: currentChat._id,
+      from: data._id,
+      msg: message.message,
+    });
+    const response = await axios.post(recieveMessageRoute, {
+      from: data._id,
+      to: currentChat._id,
+    });
+    setMessages(response.data);
     return;
   };
 
@@ -100,8 +121,18 @@ export default function ChatContainer({ currentChat, socket }) {
     }
   }, []);
 
-  useEffect(() => {
-    arrivalMessage && setMessages((prev) => [...prev, arrivalMessage]);
+  useEffect(async () => {
+    const data = await JSON.parse(
+      localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)
+    );  
+    if(arrivalMessage){
+      const response = await axios.post(recieveMessageRoute, {
+        from: data._id,
+        to: currentChat._id,
+      });
+      setMessages(response.data);
+    }
+    // arrivalMessage && setMessages((prev) => [...prev, arrivalMessage]);
   }, [arrivalMessage]);
 
   useEffect(() => {
@@ -143,12 +174,12 @@ export default function ChatContainer({ currentChat, socket }) {
                       message.fromSelf && (
                         <ButtonContainer>
                           <span>
-                            <Button onClick={() => handleClick(message, "edit")} >
+                            <Button onClick={() => handleClick(message, "edit_msg")} >
                               Edit
                             </Button>
                           </span>
                           <span>
-                            <Button onClick={() => handleClick(message, "delete")}>
+                            <Button onClick={() => handleClick(message, "delete_msg")}>
                               Delete
                             </Button>
                           </span>
